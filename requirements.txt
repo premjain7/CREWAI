@@ -76,7 +76,7 @@ mdit-py-plugins==0.6.1
 mdurl==0.1.2
 mmh3==5.3.1
 multidict==7.1.0
-numpy==2.5.4
+numpy==2.2.6
 oauthlib==4.0.0
 onnxruntime==1.31.0
 openai==2.54.0
