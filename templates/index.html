@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewAI Multi-Agent Suite</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">&#9881;</div>
+        <div class="brand-text">
+          <h1>CrewAI Suite</h1>
+          <span class="badge">10 Multi-Agent Apps</span>
+        </div>
+      </div>
+
+      <div class="system-status" id="system-status">
+        <span class="status-dot"></span>
+        <span class="status-label">Checking API...</span>
+      </div>
+
+      <nav class="agent-nav" id="agent-nav">
+        <div class="nav-section-title">CREW PROJECTS</div>
+        <button class="nav-item active" data-agent="1">
+          <span class="nav-num">01</span>
+          <span class="nav-info">
+            <span class="nav-title">Blog Post Crew</span>
+            <span class="nav-desc">Sequential 3-Agent Writer</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="2">
+          <span class="nav-num">02</span>
+          <span class="nav-info">
+            <span class="nav-title">Competitor Analysis</span>
+            <span class="nav-desc">DuckDuckGo 3-URL Audit</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="3">
+          <span class="nav-num">03</span>
+          <span class="nav-info">
+            <span class="nav-title">Meeting Notes Crew</span>
+            <span class="nav-desc">Action Items & Decisions</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="4">
+          <span class="nav-num">04</span>
+          <span class="nav-info">
+            <span class="nav-title">Data Report Crew</span>
+            <span class="nav-desc">CSV Ground-Truth Analysis</span>
+          </span>
+        </button>
+
+        <div class="nav-section-title">FLOW PROJECTS</div>
+        <button class="nav-item" data-agent="5">
+          <span class="nav-num">05</span>
+          <span class="nav-info">
+            <span class="nav-title">Customer Support</span>
+            <span class="nav-desc">Router & Priority Triage</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="6">
+          <span class="nav-num">06</span>
+          <span class="nav-info">
+            <span class="nav-title">Resume Screening</span>
+            <span class="nav-desc">Advisory PDF Screening</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="7">
+          <span class="nav-num">07</span>
+          <span class="nav-info">
+            <span class="nav-title">Bug Triage Flow</span>
+            <span class="nav-desc">Issue Classification & Analysis</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="8">
+          <span class="nav-num">08</span>
+          <span class="nav-info">
+            <span class="nav-title">Content Repurposing</span>
+            <span class="nav-desc">Parallel 3-Channel Fan-Out</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="9">
+          <span class="nav-num">09</span>
+          <span class="nav-info">
+            <span class="nav-title">Lead Qualification</span>
+            <span class="nav-desc">B2B Enrichment & Outreach</span>
+          </span>
+        </button>
+        <button class="nav-item" data-agent="10">
+          <span class="nav-num">10</span>
+          <span class="nav-info">
+            <span class="nav-title">HITL Report Flow</span>
+            <span class="nav-desc">2-Revision Review Loop</span>
+          </span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/health" target="_blank" class="footer-link">&#10003; Health Check</a>
+        <span class="footer-meta">CrewAI + FastAPI + Gemini</span>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Agent 1: Blog Post -->
+      <section class="agent-panel active" id="panel-1">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Sequential Crew</span>
+            <h2>Project 1: Blog Post Multi-Agent Crew</h2>
+          </div>
+          <p class="panel-subtitle">
+            Orchestrates Researcher, Professional Writer, and Editor agents to create an engaging, fact-checked blog post.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Input Parameters</h3>
+            <form id="form-agent-1">
+              <div class="form-group">
+                <label for="agent1-topic">Blog Topic / Title</label>
+                <input type="text" id="agent1-topic" name="topic" required placeholder="e.g., The Future of Edge Computing and AI in 2026" value="The Impact of Agentic AI Workflows in Enterprise Software">
+                <span class="form-hint">The Researcher uses DuckDuckGo to gather facts and URLs before writing.</span>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent1">
+                <span class="btn-text">Generate Blog Post</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Output Article</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent1">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent1" download>Download Markdown</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent1">
+              <div class="empty-state">Submit a topic to generate a researched, written, and edited blog post.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 2: Competitor Analysis -->
+      <section class="agent-panel" id="panel-2">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Sequential Crew</span>
+            <h2>Project 2: Competitor Analysis Crew</h2>
+          </div>
+          <p class="panel-subtitle">
+            Audits three competing companies via DuckDuckGo search, synthesizes product features, strengths, weaknesses, and market opportunities.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Competitor Websites</h3>
+            <form id="form-agent-2">
+              <div class="form-group">
+                <label for="agent2-c1">Competitor 1 URL</label>
+                <input type="url" id="agent2-c1" name="c1" required placeholder="https://notion.so" value="https://asana.com">
+              </div>
+              <div class="form-group">
+                <label for="agent2-c2">Competitor 2 URL</label>
+                <input type="url" id="agent2-c2" name="c2" required placeholder="https://linear.app" value="https://monday.com">
+              </div>
+              <div class="form-group">
+                <label for="agent2-c3">Competitor 3 URL</label>
+                <input type="url" id="agent2-c3" name="c3" required placeholder="https://trello.com" value="https://clickup.com">
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent2">
+                <span class="btn-text">Run Competitor Analysis</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Analysis Report</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent2">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent2" download>Download Report</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent2">
+              <div class="empty-state">Enter 3 competitor URLs to run automated market intelligence.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 3: Meeting Notes -->
+      <section class="agent-panel" id="panel-3">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Sequential Crew</span>
+            <h2>Project 3: Meeting Notes & Action Items Crew</h2>
+          </div>
+          <p class="panel-subtitle">
+            Multi-agent pipeline: Summarizer, Action Item Finder, and Decision Logger consolidate raw transcripts into structured executive notes.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Meeting Transcript</h3>
+            <form id="form-agent-3">
+              <div class="form-group">
+                <label for="agent3-transcript">Paste Transcript</label>
+                <textarea id="agent3-transcript" rows="10" placeholder="Paste dialogue, discussion notes, or transcript..."></textarea>
+              </div>
+              <div class="form-group">
+                <label for="agent3-file">Or Upload .txt File</label>
+                <input type="file" id="agent3-file" accept=".txt">
+              </div>
+              <button type="button" class="btn btn-sm btn-outline mb-2" id="btn-agent3-sample">Load Sample Transcript</button>
+              <button type="submit" class="btn btn-primary" id="btn-agent3">
+                <span class="btn-text">Extract Notes & Actions</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Structured Meeting Notes</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent3">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent3" download>Download Notes</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent3">
+              <div class="empty-state">Upload or paste a meeting transcript to extract summary, action items, and decisions.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 4: Data Report -->
+      <section class="agent-panel" id="panel-4">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Verified Crew</span>
+            <h2>Project 4: Sales Data Report Crew</h2>
+          </div>
+          <p class="panel-subtitle">
+            Ground-truth numerical calculation via Python Pandas guarantees hallucination-free statistics before the Analyst and Writer synthesize insights.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Sales Dataset (CSV)</h3>
+            <form id="form-agent-4">
+              <div class="form-group">
+                <label for="agent4-file">Upload Sales CSV</label>
+                <input type="file" id="agent4-file" accept=".csv">
+                <span class="form-hint">Expected columns: Product, Region, Units Sold / Quantity, Revenue / Total.</span>
+              </div>
+              <div class="form-group">
+                <button type="button" class="btn btn-sm btn-outline mb-2" id="btn-agent4-sample">Use Default Sample Sales CSV</button>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent4">
+                <span class="btn-text">Generate Verified Report</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+
+            <div id="agent4-ground-truth" class="metrics-box hidden">
+              <h4>Python-Verified Ground Truth</h4>
+              <div class="metrics-grid" id="agent4-metrics-grid"></div>
+            </div>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Executive Sales Report</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent4">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent4" download>Download Report</a>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent4-csv" download>Download CSV</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent4">
+              <div class="empty-state">Upload a sales CSV to compute verified metrics and generate a business report.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 5: Customer Support -->
+      <section class="agent-panel" id="panel-5">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Conditional Flow</span>
+            <h2>Project 5: Customer Support Router Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            CrewAI Flow routing tickets into Technical, Billing, or General inquiry categories, assessing priority and proposing targeted resolutions.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Support Ticket</h3>
+            <form id="form-agent-5">
+              <div class="form-group">
+                <label for="agent5-ticket">Ticket Description</label>
+                <textarea id="agent5-ticket" rows="6" required placeholder="Describe customer issue, question, or error..."></textarea>
+              </div>
+              <div class="sample-pills">
+                <span>Quick samples:</span>
+                <button type="button" class="pill-btn" data-sample="billing">Billing Issue</button>
+                <button type="button" class="pill-btn" data-sample="tech">Server 500 Bug</button>
+                <button type="button" class="pill-btn" data-sample="general">General Question</button>
+              </div>
+              <button type="submit" class="btn btn-primary mt-3" id="btn-agent5">
+                <span class="btn-text">Route & Resolve Ticket</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Classification & Resolution</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent5">Copy</button>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent5">
+              <div class="empty-state">Submit a ticket to classify category, urgency, and generate a recommended response.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 6: Resume Screening -->
+      <section class="agent-panel" id="panel-6">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Advisory Flow</span>
+            <h2>Project 6: Resume Screening & Assessment Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            Extracts candidate strengths, areas to improve, and advisory fit scores from PDF resumes with strict human oversight safeguards.
+          </p>
+        </header>
+
+        <!-- Mandatory Advisory Disclaimer Banner -->
+        <div class="advisory-banner">
+          <div class="banner-icon">&#9888;</div>
+          <div class="banner-text">
+            <strong>Advisory Notice & Ethical Safeguards:</strong>
+            Automated resume scores are advisory screening aids only and require independent human review.
+            Rejection emails are preliminary drafts for human consideration and are never sent automatically.
+          </div>
+        </div>
+
+        <div class="panel-grid mt-3">
+          <div class="card form-card">
+            <h3>Resume Upload (PDF)</h3>
+            <form id="form-agent-6">
+              <div class="form-group">
+                <label for="agent6-files">Select PDF Resumes</label>
+                <input type="file" id="agent6-files" accept=".pdf" multiple required>
+                <span class="form-hint">Upload one or multiple candidate resumes in PDF format.</span>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent6">
+                <span class="btn-text">Screen Resumes</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Screening Results</h3>
+              <div class="output-actions">
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent6" download>Download Results CSV</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent6">
+              <div class="empty-state">Upload candidate PDF resumes to evaluate experience and draft decision advisories.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 7: Bug Triage -->
+      <section class="agent-panel" id="panel-7">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Branching Flow</span>
+            <h2>Project 7: Bug Triage & Issue Classifier Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            Routes developer issues into Bug, Feature, or Question crews, estimating severity and drafting structured triage responses.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Issue Details</h3>
+            <form id="form-agent-7">
+              <div class="form-group">
+                <label for="agent7-title">Issue Title</label>
+                <input type="text" id="agent7-title" required placeholder="e.g., NullPointerException during checkout webhook" value="App crashes when uploading PNG over 10MB on iOS">
+              </div>
+              <div class="form-group">
+                <label for="agent7-body">Issue Description & Logs</label>
+                <textarea id="agent7-body" rows="8" required placeholder="Describe steps to reproduce, expected behavior, stack trace..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent7">
+                <span class="btn-text">Triage Issue</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Triage Assessment</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent7">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent7" download>Download JSON</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent7">
+              <div class="empty-state">Enter an issue title and description to route and triage the problem.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 8: Content Repurposing -->
+      <section class="agent-panel" id="panel-8">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Parallel Flow</span>
+            <h2>Project 8: Content Repurposing Multi-Channel Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            Parallel fan-out execution creates dedicated LinkedIn, Twitter Thread, and Newsletter assets from a single article.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Source Content</h3>
+            <form id="form-agent-8">
+              <div class="form-group">
+                <label for="agent8-source">Article Text or Article URL</label>
+                <textarea id="agent8-source" rows="8" placeholder="Paste article text or enter a public article URL..."></textarea>
+              </div>
+              <div class="form-group">
+                <label for="agent8-file">Or Upload .txt Article</label>
+                <input type="file" id="agent8-file" accept=".txt">
+              </div>
+              <button type="button" class="btn btn-sm btn-outline mb-2" id="btn-agent8-sample">Load Sample Article</button>
+              <button type="submit" class="btn btn-primary" id="btn-agent8">
+                <span class="btn-text">Repurpose into 3 Formats</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Generated Channel Assets</h3>
+              <div class="output-downloads" id="agent8-downloads"></div>
+            </div>
+
+            <!-- Tabs for 3 formats -->
+            <div class="channel-tabs">
+              <button class="channel-tab-btn active" data-tab="linkedin">LinkedIn Post</button>
+              <button class="channel-tab-btn" data-tab="twitter">Twitter / X Thread</button>
+              <button class="channel-tab-btn" data-tab="newsletter">Email Newsletter</button>
+              <button class="channel-tab-btn" data-tab="points">Key Points</button>
+            </div>
+
+            <div class="output-content" id="output-agent8">
+              <div class="empty-state">Submit an article to generate optimized content for LinkedIn, Twitter, and Newsletter simultaneously.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 9: Lead Qualification -->
+      <section class="agent-panel" id="panel-9">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">Pipeline Flow</span>
+            <h2>Project 9: Lead Qualification & Outreach Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            Enriches prospect domains, categorizes leads into Hot, Warm, or Cold, and drafts custom outreach with dedicated CSV exports.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <div class="card form-card">
+            <h3>Lead Information</h3>
+            <form id="form-agent-9">
+              <div class="form-group">
+                <label for="agent9-name">Company / Lead Name</label>
+                <input type="text" id="agent9-name" required placeholder="e.g., Stripe" value="Supabase">
+              </div>
+              <div class="form-group">
+                <label for="agent9-website">Website URL</label>
+                <input type="url" id="agent9-website" required placeholder="https://supabase.com" value="https://supabase.com">
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-agent9">
+                <span class="btn-text">Qualify & Enrich Lead</span>
+                <span class="spinner hidden"></span>
+              </button>
+            </form>
+
+            <div class="mt-4" id="agent9-downloads-container">
+              <h4>Exported Lists</h4>
+              <div class="csv-pills" id="agent9-csv-pills">
+                <span class="text-muted">CSVs will appear upon qualification.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Qualification Profile</h3>
+              <div class="output-actions">
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent9">Copy</button>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent9">
+              <div class="empty-state">Provide a lead company name and website URL to evaluate qualification status.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agent 10: Human-in-the-Loop Report Flow -->
+      <section class="agent-panel" id="panel-10">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="agent-tag">HITL Flow</span>
+            <h2>Project 10: Human-in-the-Loop Report Approval Flow</h2>
+          </div>
+          <p class="panel-subtitle">
+            Multi-step workflow: Drafts a comprehensive report, halts for human approval, supports up to 2 revisions, and never publishes rejected drafts.
+          </p>
+        </header>
+
+        <div class="panel-grid">
+          <!-- Left: Flow Controls -->
+          <div class="card form-card">
+            <h3>Workflow Stage</h3>
+
+            <!-- Stage 1: Initiation -->
+            <div id="agent10-stage-start">
+              <form id="form-agent-10-start">
+                <div class="form-group">
+                  <label for="agent10-topic">Report Topic</label>
+                  <input type="text" id="agent10-topic" required placeholder="e.g., Enterprise Adoption of Agentic AI in 2026" value="State of Multi-Agent Systems in Healthcare">
+                </div>
+                <div class="form-group">
+                  <label for="agent10-audience">Target Audience</label>
+                  <input type="text" id="agent10-audience" placeholder="e.g., Healthcare CTOs and Compliance Officers" value="Healthcare Technology Leaders">
+                </div>
+                <button type="submit" class="btn btn-primary" id="btn-agent10-start">
+                  <span class="btn-text">Generate Initial Draft</span>
+                  <span class="spinner hidden"></span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Stage 2: Human Decision Controls -->
+            <div id="agent10-stage-review" class="hidden">
+              <div class="session-badge">
+                <span>Session ID:</span> <code id="agent10-session-id">...</code>
+              </div>
+
+              <div class="revision-meter">
+                <div class="meter-label">
+                  <span>Revisions Used:</span>
+                  <strong id="agent10-rev-count">0 / 2</strong>
+                </div>
+                <div class="meter-bar">
+                  <div class="meter-fill" id="agent10-meter-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="decision-group mt-3">
+                <h4>Submit Human Decision</h4>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-success" id="btn-agent10-approve">&#10003; Approve & Publish</button>
+                  <button type="button" class="btn btn-danger" id="btn-agent10-reject">&#10005; Reject Report</button>
+                </div>
+
+                <div class="revision-feedback-box mt-3" id="agent10-feedback-section">
+                  <label for="agent10-feedback">Revision Feedback (Required for revisions)</label>
+                  <textarea id="agent10-feedback" rows="4" placeholder="Specify sections to expand, tone adjustments, or missing details..."></textarea>
+                  <button type="button" class="btn btn-warning mt-2" id="btn-agent10-revise">&#8635; Request Revision</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stage 3: Completed / Terminal State -->
+            <div id="agent10-stage-complete" class="hidden">
+              <div class="terminal-card" id="agent10-terminal-card">
+                <h4 id="agent10-terminal-title">Status</h4>
+                <p id="agent10-terminal-msg"></p>
+                <div class="output-actions mt-2" id="agent10-terminal-downloads"></div>
+                <button type="button" class="btn btn-outline mt-3" id="btn-agent10-restart">Start New Report</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Draft & Audit Display -->
+          <div class="card output-card">
+            <div class="output-header">
+              <h3>Report Document</h3>
+              <div class="output-actions">
+                <span class="status-chip chip-pending" id="agent10-status-chip">Idle</span>
+                <button class="btn btn-sm btn-outline hidden" id="copy-agent10">Copy</button>
+                <a href="#" class="btn btn-sm btn-download hidden" id="download-agent10" download>Download Final Report</a>
+              </div>
+            </div>
+            <div class="output-content" id="output-agent10">
+              <div class="empty-state">Start a topic to generate an initial draft for human review.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
