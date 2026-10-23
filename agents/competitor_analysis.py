@@ -93,17 +93,46 @@ def create_competitor_crew(output_file_path: Path):
 Analyze these three competitors:
 {competitors}
 
-Compare their products, features, publicly available pricing,
-recent announcements, strengths, weaknesses, opportunities,
-and threats.
+## Research Instructions
 
-Include source URLs. Clearly identify unavailable information.
-Do not invent facts, prices, or announcements.
+1. **Official sources first**: For each competitor, visit their official website,
+   pricing page (/pricing), features page (/features), and product documentation.
+   Use the site scraper on these specific sub-pages, not only the homepage.
+
+2. **Source attribution**: Attach the direct URL of the specific page supporting
+   each claim, placed immediately after the claim.
+   Example: "The Pro plan costs $49/month (https://example.com/pricing)."
+
+3. **Pricing is time-sensitive**: Include an "As of [Month Year]" note wherever
+   pricing or feature availability is reported. If a price is not publicly listed,
+   write: "Pricing: Not publicly listed."
+
+4. **Separate facts from analysis**:
+   - Verified fact: cite the direct source URL
+   - Analyst inference: label as [ESTIMATE]
+   - Unavailable information: label as [UNVERIFIED — not found on official pages]
+
+5. **Do not invent**: Never fabricate pricing figures, launch dates, market share,
+   customer counts, or revenue. If evidence is unavailable, state that explicitly.
+
+6. **Handle scrape failures**: If a page returns no content or an error, note the
+   failure and attempt an alternative DuckDuckGo search. Do not substitute invented data.
+
+7. **Recency**: Recommend that the user verify time-sensitive claims directly on
+   the company's official pages, since pricing changes frequently.
         """,
         expected_output="""
-A structured competitor analysis report with an executive summary,
-competitor comparison table, pricing and features, recent news,
-SWOT analysis, strategic recommendations, and source URLs.
+A structured competitor analysis report containing:
+- Executive summary (2-3 paragraphs)
+- Side-by-side comparison table (features, pricing with "as of" date, target market)
+- Pricing analysis with direct source URLs and explicit [UNVERIFIED] labels where needed
+- Recent news and announcements (with direct source URLs)
+- SWOT analysis for each competitor
+- Strategic recommendations
+- Sources section listing all URLs consulted
+
+All factual claims must cite the direct URL of the specific page consulted.
+Unverified, estimated, or unavailable information must be clearly labeled.
         """,
         agent=manager,
         output_file=str(output_file_path),

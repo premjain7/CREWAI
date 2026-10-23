@@ -22,7 +22,7 @@ class WorkflowStore:
     dyno restart or container redeployment.
     """
 
-    _lock = threading.Lock()
+    _lock = threading.RLock()
     _sessions: Dict[str, Dict[str, Any]] = {}
 
     @classmethod
@@ -30,9 +30,9 @@ class WorkflowStore:
         cls,
         session_id: str,
         topic: str,
-        audience: str,
-        research: str,
-        draft: str,
+        audience: str = "General audience",
+        research: str = "",
+        draft: str = "",
         max_revisions: int = 2,
     ) -> Dict[str, Any]:
         """Initializes a new approval session."""

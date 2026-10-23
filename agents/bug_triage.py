@@ -3,6 +3,7 @@
 Preserved from Project_7_Bug_Triage_Flow.ipynb.
 """
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Dict, Any
@@ -237,7 +238,7 @@ async def run_bug_triage(title: str, body: str) -> Dict[str, Any]:
     run_id, run_dir = FileStorageService.create_run_dir("bug_triage")
 
     flow = BugTriageFlow(title=clean_title, body=clean_body, run_dir=run_dir)
-    flow.kickoff()
+    await asyncio.to_thread(flow.kickoff)
 
     return {
         "run_id": run_id,

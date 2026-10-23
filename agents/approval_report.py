@@ -4,6 +4,7 @@ Preserved from Project_10_Approval_Report_Flow.ipynb.
 Multi-step stateful human-in-the-loop workflow.
 """
 
+import asyncio
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,7 +14,7 @@ from crewai import Agent, Task, Crew, Process
 from ddgs import DDGS
 
 from services.gemini import get_llm
-from services.file_storage import FileStorageService
+from services.file_storage import BASE_OUTPUT_DIR, FileStorageService
 from services.workflow_store import WorkflowStore
 
 
@@ -32,29 +33,40 @@ def web_search_ddg(query: str, max_results: int = 5) -> str:
         return f"Search unavailable: {exc}"
 
 
-def run_crew_step(
+async def run_crew_helper(
     role: str,
     goal: str,
     backstory: str,
     task_description: str,
     expected_output: str,
 ) -> str:
-    """Executes a single-agent crew step."""
-    llm = get_llm(temperature=0.4)
-    agent = Agent(
-        role=role,
-        goal=goal,
-        backstory=backstory,
-        llm=llm,
-        verbose=False,
-    )
-    task = Task(
-        description=task_description,
-        expected_output=expected_output,
-        agent=agent,
-    )
-    crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
-    return str(crew.kickoff()).strip()
+    """Executes a single-agent crew step asynchronously.
+
+    Runs the synchronous crew.kickoff() in a thread pool so it does not
+    block the asyncio event loop when called from async FastAPI handlers.
+    """
+    def _run_sync() -> str:
+        llm = get_llm(temperature=0.4)
+        agent = Agent(
+            role=role,
+            goal=goal,
+            backstory=backstory,
+            llm=llm,
+            verbose=False,
+        )
+        task = Task(
+            description=task_description,
+            expected_output=expected_output,
+            agent=agent,
+        )
+        crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
+        return str(crew.kickoff()).strip()
+
+    return await asyncio.to_thread(_run_sync)
+
+
+# Backward compatibility alias
+run_crew_step = run_crew_helper
 
 
 async def start_approval_report(topic: str, audience: str = "General audience") -> Dict[str, Any]:
@@ -91,7 +103,7 @@ Instructions:
 - Include relevant source URLs where available.
 - Clearly identify gaps instead of inventing facts.
 """
-    research = run_crew_step(
+    research = await run_crew_helper(
         role="Research Analyst",
         goal="Prepare an evidence-based research brief.",
         backstory="You carefully analyze information and distinguish evidence from uncertainty.",
@@ -124,7 +136,7 @@ Requirements:
 - Distinguish verified findings from uncertain information.
 - Return the report itself in Markdown.
 """
-    draft = run_crew_step(
+    draft = await run_crew_helper(
         role="Report Writer",
         goal="Produce a clear, accurate, review-ready report.",
         backstory="You are a professional writer who creates structured, evidence-based reports.",
@@ -179,7 +191,8 @@ async def submit_review_decision(
 
     run_dir = FileStorageService.get_run_dir(session_id)
     if not run_dir:
-        run_dir = FileStorageService.create_run_dir("approval")[1]
+        run_dir = BASE_OUTPUT_DIR / session_id
+        run_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -289,7 +302,7 @@ Preserve accurate content and relevant source URLs.
 Apply the feedback carefully. Do not invent facts or citations.
 Return the complete revised report in Markdown.
 """
-        revised_draft = run_crew_step(
+        revised_draft = await run_crew_helper(
             role="Report Editor",
             goal="Improve the report according to human feedback.",
             backstory="You are a meticulous editor who preserves factual accuracy.",

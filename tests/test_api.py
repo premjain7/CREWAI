@@ -78,6 +78,9 @@ def test_agent1_blog_post_success(mock_run):
     data = response.json()
     assert data["success"] is True
     assert data["data"]["run_id"] == "blog_123"
+    # The API must return the full article content, NOT a file-saved status message.
+    assert "content" in data["data"]
+    assert len(data["data"]["content"]) > 10
     assert "blog_post.md" in data["data"]["download_url"]
     mock_run.assert_awaited_once_with("AI in 2026")
 
@@ -442,13 +445,14 @@ async def test_agent10_revision_limit_enforcement(tmp_path):
     )
 
     # Revision 1 (with mock LLM)
-    with patch("agents.approval_report.run_crew_helper", return_value="Draft after Revision 1"):
+    # run_crew_helper is now async; use AsyncMock to patch it correctly.
+    with patch("agents.approval_report.run_crew_helper", new_callable=AsyncMock, return_value="Draft after Revision 1"):
         res1 = await submit_review_decision(test_session_id, "revise", "Please add edge gateway architecture.")
         assert res1["status"] == "pending_review"
         assert res1["revision_count"] == 1
 
     # Revision 2
-    with patch("agents.approval_report.run_crew_helper", return_value="Draft after Revision 2"):
+    with patch("agents.approval_report.run_crew_helper", new_callable=AsyncMock, return_value="Draft after Revision 2"):
         res2 = await submit_review_decision(test_session_id, "revise", "Please include latency benchmarks.")
         assert res2["status"] == "pending_review"
         assert res2["revision_count"] == 2
@@ -458,3 +462,262 @@ async def test_agent10_revision_limit_enforcement(tmp_path):
     assert res3["status"] == "rejected"
     assert "maximum revision limit" in res3["message"].lower()
     assert "final_report_filename" not in res3
+
+
+# -------------------------------------------------------------
+# 14. Project 1: Additional Blog Post Content Correctness Tests
+# -------------------------------------------------------------
+
+@patch("app.run_blog_post", new_callable=AsyncMock)
+def test_agent1_content_field_is_article_not_status_message(mock_run):
+    """The 'content' field must contain the article, not a file-saved status message."""
+    ARTICLE_CONTENT = "# The Future of AI\n\nArtificial intelligence is transforming industries...\n\n## Key Trends\n\nResearch shows significant progress.\n"
+    mock_run.return_value = {
+        "run_id": "blog_abc",
+        "topic": "The Future of AI",
+        "content": ARTICLE_CONTENT,
+        "filename": "blog_post.md",
+        "download_url": "/download/blog_abc/blog_post.md",
+    }
+
+    response = client.post("/agent1", json={"topic": "The Future of AI"})
+    assert response.status_code == 200
+    data = response.json()
+    content = data["data"]["content"]
+    # Must not be the file-saved status message
+    assert not content.lower().startswith("the edited article has been saved")
+    # Must contain actual article headings/paragraphs
+    assert "#" in content or len(content) > 100
+
+
+@patch("app.run_blog_post", new_callable=AsyncMock)
+def test_agent1_empty_content_raises_error(mock_run):
+    """If the article content is empty, the API should propagate a 500 error."""
+    mock_run.side_effect = RuntimeError(
+        "Blog post generation did not produce article content."
+    )
+
+    response = client.post("/agent1", json={"topic": "Test Topic"})
+    assert response.status_code == 500
+    detail = response.json()["detail"]
+    assert "blog post generation" in detail.lower() or "failed" in detail.lower()
+
+
+def test_agent1_topic_too_short_fails_validation():
+    """Topic shorter than 2 characters should fail with HTTP 422."""
+    response = client.post("/agent1", json={"topic": "A"})
+    assert response.status_code == 422
+
+
+@patch("app.run_blog_post", new_callable=AsyncMock)
+def test_agent1_download_url_in_response(mock_run):
+    """Download URL must be present so the frontend can offer a download."""
+    mock_run.return_value = {
+        "run_id": "blog_download_test",
+        "topic": "Test Download URL",
+        "content": "# Test Article\n\nContent here.",
+        "filename": "blog_post.md",
+        "download_url": "/download/blog_download_test/blog_post.md",
+    }
+
+    response = client.post("/agent1", json={"topic": "Test Download URL"})
+    assert response.status_code == 200
+    data = response.json()
+    assert "download_url" in data["data"]
+    download_url = data["data"]["download_url"]
+    # Must point to the download endpoint, not a raw local file path
+    assert download_url.startswith("/download/")
+    assert "blog_post.md" in download_url
+
+
+def test_agent1_no_os_startfile_in_blog_module():
+    """Verify blog_post.py does not call os.startfile or subprocess to open editors."""
+    import ast, pathlib
+
+    source = pathlib.Path("agents/blog_post.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    forbidden_calls = {"startfile", "Popen", "call", "run", "check_call", "check_output"}
+    dangerous_imports = {"subprocess", "webbrowser"}
+
+    # Check no dangerous import statements
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            names = [alias.name for alias in node.names]
+            module = getattr(node, "module", "") or ""
+            for name in names + [module]:
+                assert name not in dangerous_imports, (
+                    f"blog_post.py must not import '{name}' (risk of opening editor)"
+                )
+
+    # Check no os.startfile calls
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr in forbidden_calls:
+                # Allow generic attribute access, flag only specific dangerous ones
+                if func.attr == "startfile":
+                    pytest.fail("blog_post.py must not call os.startfile()")
+
+
+# -------------------------------------------------------------
+# 15. Project 10: Additional HITL Async & State Tests
+# -------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_agent10_start_approval_report_returns_draft():
+    """start_approval_report must return draft content and pending_review status."""
+    from agents.approval_report import start_approval_report
+
+    expected_draft = "# AI in Healthcare\n\nExecutive Summary: ..."
+
+    with patch("agents.approval_report.web_search_ddg", return_value="Search results about AI in healthcare."), \
+         patch("agents.approval_report.run_crew_helper", new_callable=AsyncMock) as mock_helper:
+        # First call is research, second call is draft writing
+        mock_helper.side_effect = [
+            "Research findings: AI improves diagnostics.",
+            expected_draft,
+        ]
+
+        result = await start_approval_report("AI in Healthcare", "Physicians")
+
+    assert result["status"] == "pending_review"
+    assert result["draft"] == expected_draft
+    assert "session_id" in result
+    assert result["revision_count"] == 0
+    assert result["max_revisions"] == 2
+
+
+@pytest.mark.asyncio
+async def test_agent10_create_session_signature_consistency():
+    """WorkflowStore.create_session must accept all required keyword arguments."""
+    session_id = "test_sig_consistency_001"
+    # This call matches the exact signature used in start_approval_report().
+    # If the signature changes, this test will catch the mismatch.
+    session = WorkflowStore.create_session(
+        session_id=session_id,
+        topic="Test Topic",
+        audience="Test Audience",
+        research="Test Research",
+        draft="Test Draft",
+        max_revisions=2,
+    )
+    assert session["session_id"] == session_id
+    assert session["status"] == "pending_review"
+    assert session["revision_count"] == 0
+    assert session["max_revisions"] == 2
+    assert session["draft"] == "Test Draft"
+    assert session["research"] == "Test Research"
+
+    # Cleanup
+    WorkflowStore._sessions.pop(session_id, None)
+
+
+def test_agent10_invalid_session_returns_404():
+    """Status check on a non-existent session must return 404."""
+    response = client.get("/agent10/nonexistent_session_xyz_99999")
+    assert response.status_code == 404
+    detail = response.json()["detail"]
+    assert "not found" in detail.lower()
+
+
+@patch("app.submit_review_decision", new_callable=AsyncMock)
+def test_agent10_revise_passes_feedback(mock_review):
+    """Revision request must include the human's feedback in the response."""
+    mock_review.return_value = {
+        "session_id": "sess_feedback_test",
+        "status": "pending_review",
+        "decision": "revised",
+        "revision_count": 1,
+        "max_revisions": 2,
+        "draft": "# Revised Draft\n\nUpdated content based on feedback.",
+        "message": "Revision 1/2 completed.",
+    }
+
+    response = client.post(
+        "/agent10/sess_feedback_test/review",
+        json={"decision": "revise", "feedback": "Please add more detail about edge cases."},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["data"]["status"] == "pending_review"
+    assert data["data"]["revision_count"] == 1
+    assert "draft" in data["data"]
+    # Verify submit_review_decision was called with the correct feedback
+    mock_review.assert_awaited_once_with(
+        "sess_feedback_test",
+        "revise",
+        "Please add more detail about edge cases.",
+    )
+
+
+@patch("app.submit_review_decision", new_callable=AsyncMock)
+def test_agent10_rejected_draft_has_no_publish_url(mock_review):
+    """A rejected report must never include a download URL for the final report."""
+    mock_review.return_value = {
+        "session_id": "sess_no_publish",
+        "status": "rejected",
+        "decision": "rejected",
+        "revision_count": 0,
+        "message": "Report rejected. Rejected reports are never published.",
+        "audit_download_url": "/download/sess_no_publish/rejection_record.json",
+    }
+
+    response = client.post(
+        "/agent10/sess_no_publish/review",
+        json={"decision": "reject", "feedback": "Content is inaccurate."},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"]["status"] == "rejected"
+    # Must NOT have a final report download URL (only an audit record)
+    assert "download_url" not in data["data"]
+    assert "final_report_filename" not in data["data"]
+
+
+@pytest.mark.asyncio
+async def test_agent10_approve_produces_final_report():
+    """Approval must write a final report file and return its download URL."""
+    from agents.approval_report import submit_review_decision
+
+    session_id = "test_approve_final_001"
+    WorkflowStore.create_session(
+        session_id=session_id,
+        topic="Cloud Security",
+        audience="CISOs",
+        draft="# Cloud Security Report\n\nThis is the approved content.",
+        max_revisions=2,
+    )
+
+    result = await submit_review_decision(session_id, "approve")
+
+    assert result["status"] == "approved"
+    assert result["decision"] == "approved"
+    assert "final_report_filename" in result
+    assert "download_url" in result
+    assert result["download_url"].startswith(f"/download/{session_id}/")
+    # Cleanup
+    WorkflowStore._sessions.pop(session_id, None)
+
+
+@pytest.mark.asyncio
+async def test_agent10_revise_empty_feedback_raises():
+    """Revision with no feedback must raise ValueError, not silently succeed."""
+    from agents.approval_report import submit_review_decision
+
+    session_id = "test_empty_feedback_001"
+    WorkflowStore.create_session(
+        session_id=session_id,
+        topic="Data Privacy",
+        audience="Legal Team",
+        draft="# Draft",
+        max_revisions=2,
+    )
+
+    import pytest
+    with pytest.raises(ValueError, match="feedback"):
+        await submit_review_decision(session_id, "revise", "")  # empty feedback
+
+    # Cleanup
+    WorkflowStore._sessions.pop(session_id, None)

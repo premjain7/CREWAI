@@ -350,20 +350,28 @@ Security Suite,Latin America,95,76000`;
       const m = data.data.metrics;
       metricsGrid.innerHTML = `
         <div class="metric-item">
+          <div class="metric-label">Total Records</div>
+          <div class="metric-val">${Number(m.total_records || 0).toLocaleString()}</div>
+        </div>
+        <div class="metric-item">
           <div class="metric-label">Total Revenue</div>
           <div class="metric-val">$${Number(m.total_revenue || 0).toLocaleString()}</div>
         </div>
         <div class="metric-item">
           <div class="metric-label">Total Units Sold</div>
-          <div class="metric-val">${Number(m.total_units || 0).toLocaleString()}</div>
+          <div class="metric-val">${Number(m.total_units_sold || 0).toLocaleString()}</div>
         </div>
         <div class="metric-item">
           <div class="metric-label">Top Product (Units)</div>
-          <div class="metric-val">${m.top_product_by_units || "N/A"}</div>
+          <div class="metric-val">${m.best_selling_product || "N/A"}</div>
         </div>
         <div class="metric-item">
           <div class="metric-label">Top Region (Revenue)</div>
-          <div class="metric-val">${m.top_region_by_revenue || "N/A"}</div>
+          <div class="metric-val">${m.highest_revenue_region || "N/A"}</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Avg Revenue / Record</div>
+          <div class="metric-val">$${Number(m.average_revenue_per_record || 0).toFixed(2)}</div>
         </div>
       `;
       metricsBox.classList.remove("hidden");
@@ -517,7 +525,7 @@ function initAgent6() {
         html += `
           <tr>
             <td><strong>${r.name}</strong></td>
-            <td><strong>${r.score !== null ? r.score : "N/A"}</strong> / 100</td>
+            <td><strong>${r.score !== null ? r.score : "N/A"}</strong> / 10</td>
             <td><span class="category-badge ${badge}">${r.decision}</span></td>
             <td>
               <p>${r.summary || r.explanation || ""}</p>

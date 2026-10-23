@@ -1,5 +1,6 @@
 """FastAPI web application unifying 10 CrewAI projects into a deployable website."""
 
+import asyncio
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -60,7 +61,7 @@ class BlogPostRequest(BaseModel):
 
 
 class CompetitorAnalysisRequest(BaseModel):
-    competitors: List[str] = Field(..., min_items=3, max_items=3, description="3 competitor website URLs")
+    competitors: List[str] = Field(..., min_length=3, max_length=3, description="3 competitor website URLs")
 
 
 class MeetingNotesRequest(BaseModel):
@@ -102,7 +103,7 @@ class ApprovalReviewRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def serve_index(request: Request):
     """Renders the main unified dashboard."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.get("/health")
@@ -210,7 +211,7 @@ async def api_data_report(file: UploadFile = File(...)):
 @app.post("/api/agent5")
 async def api_customer_support(payload: CustomerSupportRequest):
     try:
-        result = run_customer_support(payload.ticket_text)
+        result = await asyncio.to_thread(run_customer_support, payload.ticket_text)
         return {"success": True, "agent": 5, "data": result}
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))

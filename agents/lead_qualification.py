@@ -3,6 +3,7 @@
 Preserved from Project_9_Lead_Qualification_Flow.ipynb.
 """
 
+import asyncio
 import csv
 import json
 from datetime import datetime, timezone
@@ -328,7 +329,7 @@ async def run_lead_qualification(lead_name: str, website: str) -> Dict[str, Any]
     run_id, run_dir = FileStorageService.create_run_dir("lead")
 
     flow = LeadQualificationFlow(lead_name=clean_name, website=clean_url, run_dir=run_dir)
-    flow.kickoff()
+    await asyncio.to_thread(flow.kickoff)
 
     # Collect generated CSVs
     csv_downloads = {}

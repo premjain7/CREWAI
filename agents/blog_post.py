@@ -115,7 +115,8 @@ def create_blog_post_crew(output_file_path: Path):
             "Improve grammar, readability, tone, organization, and factual "
             "consistency. Preserve useful source links. Do not invent facts "
             "or claim that a statement is verified without supporting evidence. "
-            f"Save the final edited article to {output_file_path.name} using FileWriterTool. "
+            f"Save the final edited article using FileWriterTool with "
+            f"directory='{str(output_file_path.parent)}' and filename='{output_file_path.name}'. "
             "The file must contain the article itself, not a discussion of the task."
         ),
         expected_output=(
@@ -146,12 +147,38 @@ async def run_blog_post(topic: str) -> Dict[str, Any]:
     crew = create_blog_post_crew(output_path)
     crew_output = await crew.kickoff_async(inputs={"topic": clean_topic})
 
-    blog_content = str(crew_output).strip()
-    # If the output_file wasn't written or differs, ensure it is persisted
+    # Prefer reading the file saved by FileWriterTool in the run directory.
+    # Fall back to checking the root-level blog_post.md if FileWriterTool
+    # resolved the path relative to CWD instead of the run directory.
+    # Only use str(crew_output) as a last resort (it may be a "saved to..." message).
+    blog_content = ""
+    if output_path.exists() and output_path.stat().st_size > 0:
+        blog_content = output_path.read_text(encoding="utf-8").strip()
+    else:
+        # FileWriterTool may have saved to CWD; move it into the run directory.
+        cwd_file = Path("blog_post.md")
+        if cwd_file.exists() and cwd_file.stat().st_size > 0:
+            cwd_content = cwd_file.read_text(encoding="utf-8").strip()
+            # Only use if it looks like actual article content, not a status message
+            if len(cwd_content) > 200 and not cwd_content.lower().startswith("the edited article"):
+                blog_content = cwd_content
+                output_path.write_text(blog_content, encoding="utf-8")
+
+    # If we still don't have article content, use crew_output only if it's substantive
+    if not blog_content:
+        raw_output = str(crew_output).strip()
+        if len(raw_output) > 200 and not raw_output.lower().startswith("the edited article"):
+            blog_content = raw_output
+        else:
+            raise RuntimeError(
+                "Blog post generation did not produce article content. "
+                "The editor agent may have failed to write the file. "
+                f"Raw output was: {raw_output[:300]!r}"
+            )
+
+    # Ensure file is persisted in the run directory for download
     if not output_path.exists() or output_path.stat().st_size == 0:
         output_path.write_text(blog_content, encoding="utf-8")
-    else:
-        blog_content = output_path.read_text(encoding="utf-8")
 
     return {
         "run_id": run_id,

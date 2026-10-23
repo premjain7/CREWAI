@@ -3,6 +3,7 @@
 Preserved from Project_6_Resume_Screening_Flow.ipynb.
 """
 
+import asyncio
 import json
 from io import BytesIO
 from pathlib import Path
@@ -286,9 +287,11 @@ async def run_resume_screening(files: List[Tuple[str, bytes]]) -> Dict[str, Any]
 
     run_id, run_dir = FileStorageService.create_run_dir("resume")
 
-    # Run flow
+    # Run flow in a thread pool to avoid blocking the asyncio event loop.
+    # CrewAI Flows only support synchronous kickoff().
     flow = ResumeScreeningFlow(initial_resumes=loaded_resumes, run_dir=run_dir)
-    flow.kickoff()
+    await asyncio.to_thread(flow.kickoff)
+    # Ensure results are persisted (save_results is also called by flow listeners)
     flow.save_results()
 
     results_data = []

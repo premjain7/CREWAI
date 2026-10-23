@@ -3,6 +3,7 @@
 Preserved from Project_8_Content_Repurposing_Flow.ipynb.
 """
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Dict, Any
@@ -223,7 +224,7 @@ async def run_content_repurposing(source_text_or_url: str) -> Dict[str, Any]:
     run_id, run_dir = FileStorageService.create_run_dir("repurpose")
 
     flow = ContentRepurposingFlow(source=clean_input, run_dir=run_dir)
-    flow.kickoff()
+    await asyncio.to_thread(flow.kickoff)
 
     return {
         "run_id": run_id,
